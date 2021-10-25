@@ -3,11 +3,11 @@
 # They come with their own test/debug functions that help you visualize the
 # waveforms generated and their frequency spectrums.
 
-from test_config import RADAR
-from numpy import tile, linspace, abs, exp, real, angle
 from math import pi
-from numpy.fft import fft, fftshift
 import matplotlib.pyplot as plot
+from numpy import tile, linspace, abs, exp, real, angle
+from numpy.fft import fft, fftshift
+from test_config import RADAR
 
 def chirpGenerator(RADAR, log):
     """ 
