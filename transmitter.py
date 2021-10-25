@@ -31,10 +31,9 @@ def chirpGenerator(RADAR, log):
         print('Nyguist Sample time: {:.2e}'.format(maxSamplingTime))
         print('Radar Bandwidth: {:.2e}'.format(RADAR["Chirp Bandwidth"]))
         print('Current Sample Time: {:.2e}'.format(time[1]))
-    # Calculate the instantaneous chirp frequency
-    frequency = (time * RADAR["Chirp Bandwidth"]) / (2 * RADAR["Chirp Time"])
     # Creating the complex signal which can then be transformed
-    chirpSignal = exp(-1j * 2 * pi * frequency * time)
+    chirpSignal = exp((1j * pi * RADAR["Chirp Bandwidth"] * time * time) /\
+        RADAR["Chirp Time"])
     return chirpSignal
 
 def test_chirpGenerator():
@@ -55,7 +54,7 @@ def test_chirpGenerator():
     fig.suptitle(title, fontsize=20, weight=50)
 
     timePlot = plot.subplot(211)
-    timePlot.plot(time, transmitChirp)
+    timePlot.plot(time, transmitChirp.imag)
     timePlot.title.set_text('Time Domain')
     timePlot.grid()
 
@@ -83,7 +82,7 @@ def sequenceGenerator(radar, chirpSignal, log):
 
     # Returns the same input chirp signal repeated multiples times
     if log:
-        print('Creating a chirp sequence of length: {}\n'\
+        print('Creating a chirp sequence of length: {}'\
             .format(radar["Number of Chirps"]))
     return tile(chirpSignal, radar["Number of Chirps"])
 
@@ -96,7 +95,7 @@ def test_sequenceGenerator():
         RADAR["Time Samples in Chirp"])
 
     # Generate the signal from the chirpGenerator function
-    transmitChirp = real(chirpGenerator(RADAR, True))
+    transmitChirp = chirpGenerator(RADAR, True)
     
     # Generate the chirp sequence from the sequenceGenerator
     transmitSequence = sequenceGenerator(RADAR, transmitChirp, True)
@@ -131,4 +130,4 @@ def test_sequenceGenerator():
 # domain representations of the chirp and the chirp sequence
 if __name__ == '__main__':
     test_chirpGenerator()
-    test_sequenceGenerator()
+    # test_sequenceGenerator()

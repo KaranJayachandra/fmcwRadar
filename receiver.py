@@ -38,10 +38,10 @@ def test_signalMixer():
     transmitSequence = sequenceGenerator(RADAR, chirpSignal, False)
 
     # Creating the targets and the reflections
-    receiveSequence = radarChannel(RADAR, ENVIRONMENT, transmitSequence.real)
+    receiveSequence = radarChannel(RADAR, ENVIRONMENT, transmitSequence)
 
     # Mixing the signals to get the beat signal
-    beatSignal = signalMixer(transmitSequence.real, receiveSequence)
+    beatSignal = signalMixer(transmitSequence, receiveSequence)
 
     # Calculating the transmit frequency spectrum
     transmitSpectrum = fftshift(fft(transmitSequence, \

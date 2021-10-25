@@ -8,5 +8,5 @@ RADAR = {
 ENVIRONMENT = {
     "Total Targets": 2,
     "Target 1" : 1000,
-    "Target 2" : 3000
+    "Target 2" : 1500
 }

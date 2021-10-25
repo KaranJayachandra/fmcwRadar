@@ -82,7 +82,7 @@ def test_radarTarget():
     fig.suptitle(title, fontsize=20, weight=50)
 
     timePlot = plot.subplot(211)
-    timePlot.plot(time, abs(receiveSequence))
+    timePlot.plot(time, abs(receiveSequence.real))
     timePlot.title.set_text('Time Domain')
     timePlot.grid()
 
@@ -147,7 +147,7 @@ def test_radarChannel():
     fig.suptitle(title, fontsize=20, weight=50)
 
     timePlot = plot.subplot(211)
-    timePlot.plot(time, abs(receiveSequence))
+    timePlot.plot(time, abs(receiveSequence.real))
     timePlot.title.set_text('Time Domain')
     timePlot.grid()
 
