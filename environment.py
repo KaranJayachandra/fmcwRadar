@@ -70,7 +70,7 @@ def test_radarTarget():
     target = RadarTarget(2000)
 
     # Transmit the chirp sequence against the RadarTarget
-    receiveSequence = target.reflect(RADAR, transmitSequence.real)
+    receiveSequence = target.reflect(RADAR, transmitSequence)
 
     # Calculating the frequency spectrum
     frequencySpectrum = fftshift(fft(receiveSequence, \
@@ -135,7 +135,7 @@ def test_radarChannel():
     transmitSequence = sequenceGenerator(RADAR, chirpSignal, False)
 
     # Creating the targets and the reflections
-    receiveSequence = radarChannel(RADAR, ENVIRONMENT, transmitSequence.real)
+    receiveSequence = radarChannel(RADAR, ENVIRONMENT, transmitSequence)
 
     # Calculating the frequency spectrum
     frequencySpectrum = fftshift(fft(receiveSequence, \

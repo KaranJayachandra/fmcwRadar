@@ -44,7 +44,7 @@ def test_chirpGenerator():
     frequency = linspace(- 0.5 / time[1], 0.5 / time[1], time.size)
 
     # Generate the signal from the chirpGenerator function
-    transmitChirp = real(chirpGenerator(RADAR, True))
+    transmitChirp = chirpGenerator(RADAR, True)
     
     # Calculating the frequency spectrum
     frequencySpectrum = fftshift(fft(transmitChirp))

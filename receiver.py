@@ -3,7 +3,7 @@
 
 from scipy.constants import c
 import matplotlib.pyplot as plot
-from numpy import multiply, linspace
+from numpy import multiply, linspace, conj
 from numpy.fft import fft, fftshift
 from test_config import RADAR, ENVIRONMENT
 from transmitter import chirpGenerator, sequenceGenerator
