@@ -7,6 +7,7 @@ from math import pi
 import matplotlib.pyplot as plot
 from numpy import tile, linspace, abs, exp, real, angle
 from numpy.fft import fft, fftshift
+from common import simpleSpectrum
 from test_config import RADAR
 
 def chirpGenerator(RADAR, log):
@@ -34,7 +35,7 @@ def chirpGenerator(RADAR, log):
     # Creating the complex signal which can then be transformed
     chirpSignal = exp((1j * pi * RADAR["Chirp Bandwidth"] * time * time) /\
         RADAR["Chirp Time"])
-    return chirpSignal
+    return chirpSignal.real
 
 def test_chirpGenerator():
     # Generate the time axis for plotting the signal
@@ -46,7 +47,7 @@ def test_chirpGenerator():
     transmitChirp = chirpGenerator(RADAR, True)
     
     # Calculating the frequency spectrum
-    frequencySpectrum = fftshift(fft(transmitChirp))
+    frequencySpectrum = simpleSpectrum(transmitChirp)
 
     # Plotting the results
     fig = plot.figure()
@@ -54,7 +55,7 @@ def test_chirpGenerator():
     fig.suptitle(title, fontsize=20, weight=50)
 
     timePlot = plot.subplot(211)
-    timePlot.plot(time, transmitChirp.imag)
+    timePlot.plot(time, transmitChirp)
     timePlot.title.set_text('Time Domain')
     timePlot.grid()
 
@@ -130,4 +131,4 @@ def test_sequenceGenerator():
 # domain representations of the chirp and the chirp sequence
 if __name__ == '__main__':
     test_chirpGenerator()
-    # test_sequenceGenerator()
+    test_sequenceGenerator()

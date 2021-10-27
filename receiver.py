@@ -6,6 +6,7 @@ import matplotlib.pyplot as plot
 from numpy import multiply, linspace, conj
 from numpy.fft import fft, fftshift
 from test_config import RADAR, ENVIRONMENT
+from common import simpleSpectrum
 from transmitter import chirpGenerator, sequenceGenerator
 from environment import radarChannel
 
@@ -28,8 +29,8 @@ def test_signalMixer():
         RADAR["Time Samples in Chirp"])
 
     # Creating the range axis to check for the target
-    range = linspace(-RADAR["Chirp Time"] * c / 2, \
-        RADAR["Chirp Time"] * c / 2, RADAR["Time Samples in Chirp"])
+    range = linspace(-time[1] * c / 2, \
+        time[1] * c / 2, RADAR["Time Samples in Chirp"])
 
     # Generate a chirp signal
     chirpSignal = chirpGenerator(RADAR, False)
@@ -44,16 +45,13 @@ def test_signalMixer():
     beatSignal = signalMixer(transmitSequence, receiveSequence)
 
     # Calculating the transmit frequency spectrum
-    transmitSpectrum = fftshift(fft(transmitSequence, \
-        n=RADAR["Time Samples in Chirp"]))
+    transmitSpectrum = simpleSpectrum(transmitSequence)
 
     # Calculating the receive frequency spectrum
-    receiveSpectrum = fftshift(fft(receiveSequence, \
-        n=RADAR["Time Samples in Chirp"]))
+    receiveSpectrum = simpleSpectrum(receiveSequence)
 
     # Calculating the transmit frequency spectrum
-    beatSpectrum = fftshift(fft(beatSignal, \
-        n=RADAR["Time Samples in Chirp"]))
+    beatSpectrum = simpleSpectrum(beatSignal)
 
     # Plotting the received signal to check for delay
     fig = plot.figure()
