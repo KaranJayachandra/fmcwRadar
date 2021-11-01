@@ -8,6 +8,7 @@ from scipy.constants import c
 import matplotlib.pyplot as plot
 from numpy import linspace, copy, pad, zeros, abs, angle
 from numpy.fft import fft, fftshift
+from common import phaseSpectrum, powerSpectrum
 from test_config import RADAR, ENVIRONMENT
 from transmitter import chirpGenerator, sequenceGenerator
 
@@ -51,6 +52,7 @@ class RadarTarget():
             chirpBlock[iSlow, :] = delayChirp[0:chirpSignal.size]
         # Return the sequence back to the receiver
         return self.attenuation * chirpBlock.flatten()
+        # return chirpBlock.flatten()
 
 def test_radarTarget():
     # Generate the time axis for plotting the signal
@@ -72,27 +74,23 @@ def test_radarTarget():
     # Transmit the chirp sequence against the RadarTarget
     receiveSequence = target.reflect(RADAR, transmitSequence)
 
-    # Calculating the frequency spectrum
-    frequencySpectrum = fftshift(fft(receiveSequence, \
-        n=RADAR["Time Samples in Chirp"]))
-
     # Plotting the received signal to check for delay
     fig = plot.figure()
     title = "Receive Chirp (Single Target at 2000m)"
     fig.suptitle(title, fontsize=20, weight=50)
 
     timePlot = plot.subplot(211)
-    timePlot.plot(time, abs(receiveSequence.real))
+    timePlot.plot(time, receiveSequence)
     timePlot.title.set_text('Time Domain')
     timePlot.grid()
 
     frequencyPlot = plot.subplot(223)
-    frequencyPlot.plot(frequency / 1e6, abs(frequencySpectrum))
+    frequencyPlot.plot(frequency / 1e6, powerSpectrum(receiveSequence))
     frequencyPlot.title.set_text('Frequency Domain: Amplitude')
     frequencyPlot.grid()
 
     anglePlot = plot.subplot(224)
-    anglePlot.plot(frequency / 1e6, (180 / pi) * angle(frequencySpectrum))
+    anglePlot.plot(frequency / 1e6, phaseSpectrum(receiveSequence))
     anglePlot.title.set_text('Frequency Domain: Phase')
     anglePlot.grid()
 
@@ -137,10 +135,6 @@ def test_radarChannel():
     # Creating the targets and the reflections
     receiveSequence = radarChannel(RADAR, ENVIRONMENT, transmitSequence)
 
-    # Calculating the frequency spectrum
-    frequencySpectrum = fftshift(fft(receiveSequence, \
-        n=RADAR["Time Samples in Chirp"]))
-
     # Plotting the received signal to check for delay
     fig = plot.figure()
     title = "Receive Chirp (Two Targets at 1000m and 1500m)"
@@ -152,12 +146,12 @@ def test_radarChannel():
     timePlot.grid()
 
     frequencyPlot = plot.subplot(223)
-    frequencyPlot.plot(frequency / 1e6, abs(frequencySpectrum))
+    frequencyPlot.plot(frequency / 1e6, powerSpectrum(receiveSequence))
     frequencyPlot.title.set_text('Frequency Domain: Amplitude')
     frequencyPlot.grid()
 
     anglePlot = plot.subplot(224)
-    anglePlot.plot(frequency / 1e6, (180 / pi) * angle(frequencySpectrum))
+    anglePlot.plot(frequency / 1e6, phaseSpectrum(receiveSequence))
     anglePlot.title.set_text('Frequency Domain: Phase')
     anglePlot.grid()
 

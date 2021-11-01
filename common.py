@@ -1,7 +1,21 @@
+from numpy.core.fromnumeric import mean
 from test_config import RADAR
-from numpy import log, abs
+from math import pi
+from scipy.constants import k
+from numpy import log, abs, angle, exp
 from numpy.fft import fftshift, fft
+from numpy.random import normal
 
-def simpleSpectrum(input):
+
+def powerSpectrum(input):
     return 20 * log(abs(fftshift(fft(input, \
         n=RADAR["Time Samples in Chirp"]))))
+
+def phaseSpectrum(input):
+    return (180 / pi) * angle(fftshift(fft(input, \
+        n=RADAR["Time Samples in Chirp"])))
+
+def addNoise(RADAR, data):
+    bandwidth = RADAR["Time Samples in Chirp"] / RADAR["Chirp Time"]
+    variance = k * RADAR["Operating Temperature"] * bandwidth
+    return data + normal(loc=0.0, scale=variance, size=data.shape)

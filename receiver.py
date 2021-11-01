@@ -3,10 +3,10 @@
 
 from scipy.constants import c
 import matplotlib.pyplot as plot
-from numpy import multiply, linspace, conj
+from numpy import multiply, linspace, copy
 from numpy.fft import fft, fftshift
 from test_config import RADAR, ENVIRONMENT
-from common import simpleSpectrum
+from common import powerSpectrum, addNoise
 from transmitter import chirpGenerator, sequenceGenerator
 from environment import radarChannel
 
@@ -29,8 +29,9 @@ def test_signalMixer():
         RADAR["Time Samples in Chirp"])
 
     # Creating the range axis to check for the target
-    range = linspace(-time[1] * c / 2, \
-        time[1] * c / 2, RADAR["Time Samples in Chirp"])
+    rMax = (RADAR["Chirp Time"] * c) / (4 * RADAR["Chirp Bandwidth"] * time[1])
+
+    range = linspace(-rMax, rMax, RADAR["Time Samples in Chirp"])
 
     # Generate a chirp signal
     chirpSignal = chirpGenerator(RADAR, False)
@@ -44,41 +45,80 @@ def test_signalMixer():
     # Mixing the signals to get the beat signal
     beatSignal = signalMixer(transmitSequence, receiveSequence)
 
-    # Calculating the transmit frequency spectrum
-    transmitSpectrum = simpleSpectrum(transmitSequence)
+    # Plotting the received signal to check for delay
+    fig = plot.figure()
+    title = "Mixer Output (Two Targets at 1000m and 1500m)"
+    fig.suptitle(title, fontsize=20, weight=50)
 
-    # Calculating the receive frequency spectrum
-    receiveSpectrum = simpleSpectrum(receiveSequence)
+    frequencyPlot = plot.subplot(211)
+    frequencyPlot.plot(range, powerSpectrum(beatSignal))
+    frequencyPlot.title.set_text('Mixer: Frequency Domain')
+    frequencyPlot.grid()
 
-    # Calculating the transmit frequency spectrum
-    beatSpectrum = simpleSpectrum(beatSignal)
+    transmitPlot = plot.subplot(223)
+    transmitPlot.plot(frequency / 1e6, powerSpectrum(transmitSequence))
+    transmitPlot.title.set_text('Transmit: Frequency Domain')
+    transmitPlot.grid()
+
+    receivePlot = plot.subplot(224)
+    receivePlot.plot(frequency / 1e6, powerSpectrum(receiveSequence))
+    receivePlot.title.set_text('Receive: Frequency Domain')
+    receivePlot.grid()
+
+    plot.show()
+
+def rangeDopplerProcessing(radar, mixerOutput):
+    # Reshape the output for FFT processing
+    radarCube = copy(mixerOutput).reshape(( \
+            radar["Time Samples in Chirp"], radar["Number of Chirps"]))
+
+    # Calculate the FFT for range
+    radarCube = fftshift(fft(radarCube, axis=0), axes=0)
+    radarCube = fftshift(fft(radarCube, axis=1), axes=1)
+
+    # Return the processed cube
+    return radarCube
+
+def test_rangeDopplerProcessing():
+    # Generate the time axis for plotting the signal
+    time = linspace(0, RADAR["Chirp Time"] * RADAR["Number of Chirps"], \
+        RADAR["Time Samples in Chirp"] * RADAR["Number of Chirps"])
+
+    # Generating the frequency axis for plotting
+    frequency = linspace(- 0.5 / time[1], 0.5 / time[1], \
+        RADAR["Time Samples in Chirp"])
+
+    # Creating the range axis to check for the target
+    rMax = (RADAR["Chirp Time"] * c) / (4 * RADAR["Chirp Bandwidth"] * time[1])
+
+    range = linspace(-rMax, rMax, RADAR["Time Samples in Chirp"])
+
+    # Generate a chirp signal
+    chirpSignal = chirpGenerator(RADAR, False)
+
+    # Generate Chirp Sequence
+    transmitSequence = sequenceGenerator(RADAR, chirpSignal, False)
+
+    # Creating the targets and the reflections
+    receiveSequence = radarChannel(RADAR, ENVIRONMENT, transmitSequence)
+
+    # Mixing the signals to get the beat signal
+    beatSignal = signalMixer(transmitSequence, receiveSequence)
+
+    # Calculate the Radar Cube
+    radarCube = rangeDopplerProcessing(RADAR, beatSignal)
+
+    # Adding noise
+    radarCube = addNoise(RADAR, radarCube)
 
     # Plotting the received signal to check for delay
     fig = plot.figure()
     title = "Mixer Output (Two Targets at 1000m and 1500m)"
     fig.suptitle(title, fontsize=20, weight=50)
 
-    timePlot = plot.subplot(221)
-    timePlot.plot(time, beatSignal.real)
-    timePlot.title.set_text('Mixer: Time Domain')
-    timePlot.grid()
-
-    frequencyPlot = plot.subplot(222)
-    frequencyPlot.plot(range, abs(beatSpectrum))
-    frequencyPlot.title.set_text('Mixer: Frequency Domain')
-    frequencyPlot.grid()
-
-    transmitPlot = plot.subplot(223)
-    transmitPlot.plot(frequency / 1e6, abs(transmitSpectrum))
-    transmitPlot.title.set_text('Transmit: Frequency Domain')
-    transmitPlot.grid()
-
-    receivePlot = plot.subplot(224)
-    receivePlot.plot(frequency / 1e6, abs(receiveSpectrum))
-    receivePlot.title.set_text('Receive: Frequency Domain')
-    receivePlot.grid()
-
+    plot.imshow(abs(radarCube))
     plot.show()
 
 if __name__ == '__main__':
     test_signalMixer()
+    test_rangeDopplerProcessing()

@@ -5,9 +5,9 @@
 
 from math import pi
 import matplotlib.pyplot as plot
-from numpy import tile, linspace, abs, exp, real, angle
+from numpy import tile, linspace, abs, exp, angle
 from numpy.fft import fft, fftshift
-from common import simpleSpectrum
+from common import powerSpectrum, phaseSpectrum
 from test_config import RADAR
 
 def chirpGenerator(RADAR, log):
@@ -24,9 +24,9 @@ def chirpGenerator(RADAR, log):
     # Create the time axis for the calculation of the signal
     time = linspace(0, RADAR["Chirp Time"], RADAR["Time Samples in Chirp"])
     # Check if nyguist criteria is met using the given time samples
-    if time[1] > maxSamplingTime:
+    if time[1] < maxSamplingTime:
         raise ValueError("For the given chirp the smallest sampling time is " \
-            + maxSamplingTime + ". Please configure the Chirp correctly")
+            + str(maxSamplingTime) + ". Please configure the Chirp correctly")
     # Print the log if requested
     elif (log):
         print('Nyguist Sample time: {:.2e}'.format(maxSamplingTime))
@@ -47,7 +47,7 @@ def test_chirpGenerator():
     transmitChirp = chirpGenerator(RADAR, True)
     
     # Calculating the frequency spectrum
-    frequencySpectrum = simpleSpectrum(transmitChirp)
+    frequencySpectrum = powerSpectrum(transmitChirp)
 
     # Plotting the results
     fig = plot.figure()
@@ -60,12 +60,12 @@ def test_chirpGenerator():
     timePlot.grid()
 
     frequencyPlot = plot.subplot(223)
-    frequencyPlot.plot(frequency / 1e6, abs(frequencySpectrum))
+    frequencyPlot.plot(frequency / 1e6, powerSpectrum(transmitChirp))
     frequencyPlot.title.set_text('Frequency Domain: Amplitude')
     frequencyPlot.grid()
 
     anglePlot = plot.subplot(224)
-    anglePlot.plot(frequency / 1e6, (180 / pi) * angle(frequencySpectrum))
+    anglePlot.plot(frequency / 1e6, phaseSpectrum(transmitChirp))
     anglePlot.title.set_text('Frequency Domain: Phase')
     anglePlot.grid()
 
@@ -101,10 +101,6 @@ def test_sequenceGenerator():
     # Generate the chirp sequence from the sequenceGenerator
     transmitSequence = sequenceGenerator(RADAR, transmitChirp, True)
 
-    # Calculating the frequency spectrum
-    frequencySpectrum = fftshift(fft(transmitSequence, \
-        n=RADAR["Time Samples in Chirp"]))
-
     # Plotting the results
     fig = plot.figure()
     title = "Transmit Sequence"
@@ -116,12 +112,12 @@ def test_sequenceGenerator():
     timePlot.grid()
 
     frequencyPlot = plot.subplot(223)
-    frequencyPlot.plot(frequency / 1e6, abs(frequencySpectrum))
+    frequencyPlot.plot(frequency / 1e6, powerSpectrum(transmitSequence))
     frequencyPlot.title.set_text('Frequency Domain: Amplitude')
     frequencyPlot.grid()
 
     anglePlot = plot.subplot(224)
-    anglePlot.plot(frequency / 1e6, (180 / pi) * angle(frequencySpectrum))
+    anglePlot.plot(frequency / 1e6, phaseSpectrum(transmitSequence))
     anglePlot.title.set_text('Frequency Domain: Phase')
     anglePlot.grid()
 
