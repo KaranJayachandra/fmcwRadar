@@ -6,7 +6,7 @@
 from math import pi
 from scipy.constants import c
 import matplotlib.pyplot as plot
-from numpy import linspace, copy, pad, zeros, abs, angle
+from numpy import linspace, copy, pad, zeros, abs, angle, exp, multiply
 from numpy.fft import fft, fftshift
 from common import phaseSpectrum, powerSpectrum
 from test_config import RADAR, ENVIRONMENT
@@ -19,13 +19,15 @@ class RadarTarget():
 
     # The class is initialized with the range of the target
     # TODO: Add the target velocity as a parameters as well
-    def __init__(self, range):
+    def __init__(self, range, velocity):
         """
         RadarTarget object contructor that requires the range of the target as 
         input
         :param range: integer, must be positive
         """
+        # Range and Doppler of the target based on initialization
         self.range = range
+        self.velocity = velocity
         # Calculate the delay based on the target distance
         self.delay = (self.range * 2) / c
         # Calculate the attentuation due to propagation
@@ -42,14 +44,20 @@ class RadarTarget():
         time = linspace(0, radar["Chirp Time"], radar["Time Samples in Chirp"])
         closestIndex = (abs(time - self.delay)).argmin()
         # Seperating the chirps for individual processing
-        chirpBlock = copy(chirpSequence).reshape(( \
+        chirpBlock = copy(chirpSequence.astype(complex)).reshape(( \
             radar["Number of Chirps"], radar["Time Samples in Chirp"]))
         # Processing chirp by chirp
         for iSlow in range(radar["Number of Chirps"]):
             chirpSignal = chirpBlock[iSlow, :]
             # Pad the zeros and return the chirp signal back after cutting
             delayChirp = pad(chirpSignal, (closestIndex, 0))
-            chirpBlock[iSlow, :] = delayChirp[0:chirpSignal.size]
+            delayChirp = delayChirp[0:chirpSignal.size]
+            # Multiple with the constant phase denoting doppler
+            phase = 4 * pi * (iSlow * self.velocity * radar["Chirp Time"]) \
+                / radar["Carrier Wavelength"]
+            phase = exp(1j * phase)
+            # Multiply with the phase and return
+            chirpBlock[iSlow, :] = multiply(phase, delayChirp)
         # Return the sequence back to the receiver
         # return self.attenuation * chirpBlock.flatten()
         return chirpBlock.flatten()
@@ -69,10 +77,11 @@ def test_radarTarget():
     transmitSequence = sequenceGenerator(RADAR, chirpSignal, False)
 
     # Using test_config to access target distance
-    targetDistance = ENVIRONMENT["Target 1"]
+    targetDistance = ENVIRONMENT["Target 1"][0]
+    targetVelocity = ENVIRONMENT["Target 1"][1]
 
     # Create a radarTarget at range 100 m
-    target = RadarTarget(targetDistance)
+    target = RadarTarget(targetDistance, targetVelocity)
 
     # Transmit the chirp sequence against the RadarTarget
     receiveSequence = target.reflect(RADAR, transmitSequence)
@@ -113,9 +122,9 @@ def radarChannel(radar, environment, chirpSequence):
     receivedSequence = zeros(chirpSequence.size)
     # Creating the targets based on the class radarTarget
     for iTarget in range(environment["Total Targets"]):
-        # targetDistance = 3000 * uniform(0, 1)
-        targetDistance = environment["Target " + str(iTarget + 1)]
-        target = RadarTarget(targetDistance)
+        targetDistance = environment["Target " + str(iTarget + 1)][0]
+        targetVelocity = environment["Target " + str(iTarget + 1)][1]
+        target = RadarTarget(targetDistance, targetVelocity)
         targetResponse = target.reflect(radar, chirpSequence)
         receivedSequence = receivedSequence + targetResponse
     # Return back the sequence to the Receiver
@@ -140,8 +149,8 @@ def test_radarChannel():
 
     # Plotting the received signal to check for delay
     fig = plot.figure()
-    title = "Receive Chirp (Targets at: " + str(ENVIRONMENT["Target 1"]) + \
-        "m and " + str(ENVIRONMENT["Target 2"]) + "m)"
+    title = "Receive Chirp (Targets at: " + str(ENVIRONMENT["Target 1"][0]) + \
+        "m and " + str(ENVIRONMENT["Target 2"][0]) + "m)"
     fig.suptitle(title, fontsize=20, weight=50)
 
     timePlot = plot.subplot(211)

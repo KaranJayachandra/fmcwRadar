@@ -4,7 +4,7 @@
 from scipy.constants import c
 import matplotlib.pyplot as plot
 from matplotlib import cm
-from numpy import multiply, linspace, copy, log, meshgrid, transpose
+from numpy import multiply, linspace, copy, log, transpose
 from numpy.fft import fft, fftshift
 from test_config import RADAR, ENVIRONMENT
 from common import powerSpectrum, addNoise
@@ -48,8 +48,8 @@ def test_signalMixer():
 
     # Plotting the received signal to check for delay
     fig = plot.figure()
-    title = "Receive Chirp (Targets at: " + str(ENVIRONMENT["Target 1"]) + \
-        "m and " + str(ENVIRONMENT["Target 2"]) + "m)"
+    title = "Receive Chirp (Targets at: " + str(ENVIRONMENT["Target 1"][0]) + \
+        "m and " + str(ENVIRONMENT["Target 2"][0]) + "m)"
     fig.suptitle(title, fontsize=20, weight=50)
 
     frequencyPlot = plot.subplot(211)
@@ -117,8 +117,8 @@ def test_rangeDopplerProcessing():
 
     # Plotting the received signal to check for delay
     fig = plot.figure()
-    title = "Range Doppler Map (Targets at: " + str(ENVIRONMENT["Target 1"]) + \
-        "m and " + str(ENVIRONMENT["Target 2"]) + "m)"
+    title = "Range Doppler Map (Targets at: " + str(ENVIRONMENT["Target 1"][0]) + \
+        "m and " + str(ENVIRONMENT["Target 2"][0]) + "m)"
     fig.suptitle(title, fontsize=20, weight=50)
 
     # Neglecting the negative range data

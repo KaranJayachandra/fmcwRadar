@@ -2,7 +2,10 @@
 # refer to the the pdf document talking about the basics of Automotive Radar
 # systems.
 
+from scipy.constants import c
+
 RADAR = {
+    "Carrier Wavelength" : c / 77e9,
     "Range Resolution" : 1,
     "Chirp Bandwidth" : 150e6,
     "Chirp Time" : 25.6e-6,
@@ -15,6 +18,6 @@ RADAR = {
 
 ENVIRONMENT = {
     "Total Targets": 2,
-    "Target 1" : 100,
-    "Target 2" : 150
+    "Target 1" : [100, 10],
+    "Target 2" : [150, -20]
 }

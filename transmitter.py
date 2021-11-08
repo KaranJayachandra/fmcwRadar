@@ -45,9 +45,6 @@ def test_chirpGenerator():
 
     # Generate the signal from the chirpGenerator function
     transmitChirp = chirpGenerator(RADAR, True)
-    
-    # Calculating the frequency spectrum
-    frequencySpectrum = powerSpectrum(transmitChirp)
 
     # Plotting the results
     fig = plot.figure()
