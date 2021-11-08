@@ -1,14 +1,20 @@
+# Calculating these parameters requires Radar background knowledge. Please
+# refer to the the pdf document talking about the basics of Automotive Radar
+# systems.
+
 RADAR = {
     "Range Resolution" : 1,
     "Chirp Bandwidth" : 150e6,
     "Chirp Time" : 25.6e-6,
     "Time Samples in Chirp" : 512,
-    "Number of Chirps" : 512,
-    "Operating Temperature" : 290
+    "Number of Chirps" : 256,
+    "Operating Temperature" : 300,
+    "Antenna Gain" : 1,
+    "Noise Figure": 100
 }
 
 ENVIRONMENT = {
     "Total Targets": 2,
-    "Target 1" : 10,
-    "Target 2" : 50
+    "Target 1" : 100,
+    "Target 2" : 150
 }

@@ -43,7 +43,7 @@ class RadarTarget():
         closestIndex = (abs(time - self.delay)).argmin()
         # Seperating the chirps for individual processing
         chirpBlock = copy(chirpSequence).reshape(( \
-            radar["Time Samples in Chirp"], radar["Number of Chirps"]))
+            radar["Number of Chirps"], radar["Time Samples in Chirp"]))
         # Processing chirp by chirp
         for iSlow in range(radar["Number of Chirps"]):
             chirpSignal = chirpBlock[iSlow, :]
@@ -51,8 +51,8 @@ class RadarTarget():
             delayChirp = pad(chirpSignal, (closestIndex, 0))
             chirpBlock[iSlow, :] = delayChirp[0:chirpSignal.size]
         # Return the sequence back to the receiver
-        return self.attenuation * chirpBlock.flatten()
-        # return chirpBlock.flatten()
+        # return self.attenuation * chirpBlock.flatten()
+        return chirpBlock.flatten()
 
 def test_radarTarget():
     # Generate the time axis for plotting the signal
@@ -68,15 +68,18 @@ def test_radarTarget():
     # Generate Chirp Sequence
     transmitSequence = sequenceGenerator(RADAR, chirpSignal, False)
 
-    # Create a radarTarget at range 1500 m
-    target = RadarTarget(2000)
+    # Using test_config to access target distance
+    targetDistance = ENVIRONMENT["Target 1"]
+
+    # Create a radarTarget at range 100 m
+    target = RadarTarget(targetDistance)
 
     # Transmit the chirp sequence against the RadarTarget
     receiveSequence = target.reflect(RADAR, transmitSequence)
 
     # Plotting the received signal to check for delay
     fig = plot.figure()
-    title = "Receive Chirp (Single Target at 2000m)"
+    title = "Receive Chirp (Single Target at" + str(targetDistance) + "m)"
     fig.suptitle(title, fontsize=20, weight=50)
 
     timePlot = plot.subplot(211)
@@ -137,7 +140,8 @@ def test_radarChannel():
 
     # Plotting the received signal to check for delay
     fig = plot.figure()
-    title = "Receive Chirp (Two Targets at 1000m and 1500m)"
+    title = "Receive Chirp (Targets at: " + str(ENVIRONMENT["Target 1"]) + \
+        "m and " + str(ENVIRONMENT["Target 2"]) + "m)"
     fig.suptitle(title, fontsize=20, weight=50)
 
     timePlot = plot.subplot(211)
