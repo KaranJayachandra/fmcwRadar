@@ -3,7 +3,7 @@
 # They come with their own test/debug functions that help you visualize the
 # waveforms returned and their frequency spectrums.
 
-from math import pi
+from math import pi, sin, radians
 from scipy.constants import c
 import matplotlib.pyplot as plot
 from numpy import linspace, copy, pad, zeros, abs, angle, exp, multiply
@@ -119,14 +119,27 @@ def radarChannel(radar, environment, chirpSequence):
     """
 
     # Creating an empty array where the return sequence is stored
-    receivedSequence = zeros(chirpSequence.size)
-    # Creating the targets based on the class radarTarget
-    for iTarget in range(environment["Total Targets"]):
-        targetDistance = environment["Target " + str(iTarget + 1)][0]
-        targetVelocity = environment["Target " + str(iTarget + 1)][1]
-        target = RadarTarget(targetDistance, targetVelocity)
-        targetResponse = target.reflect(radar, chirpSequence)
-        receivedSequence = receivedSequence + targetResponse
+    receivedSequence = zeros((radar["Array Size"], chirpSequence.size), \
+        dtype=complex)
+
+    # Loop through the channels
+    for iChannel in range(radar["Array Size"]):
+        # Creating the targets based on the class radarTarget
+        for iTarget in range(environment["Total Targets"]):
+            # Storing the target properties for easy access
+            targetDistance = environment["Target " + str(iTarget + 1)][0]
+            targetVelocity = environment["Target " + str(iTarget + 1)][1]
+            targetAngle = environment["Target " + str(iTarget + 1)][2]
+            # Calculating the phase difference due to array geometry
+            arrayPhase = 2 * pi * radar["Array Spacing"] * iChannel * \
+                sin(radians(targetAngle))
+            arrayFactor = exp(1j * arrayPhase)
+            # Calculate the target reflection and multiply array phase factor
+            target = RadarTarget(targetDistance, targetVelocity)
+            targetResponse = arrayFactor * target.reflect(radar, chirpSequence)
+            # Store in the received sequence array
+            receivedSequence[iChannel, :] = receivedSequence[iChannel, :] + \
+                targetResponse
     # Return back the sequence to the Receiver
     return receivedSequence
 
@@ -147,6 +160,9 @@ def test_radarChannel():
     # Creating the targets and the reflections
     receiveSequence = radarChannel(RADAR, ENVIRONMENT, transmitSequence)
 
+    # Processing just one channel for testing
+    channelSequence = receiveSequence[0, :]
+
     # Plotting the received signal to check for delay
     fig = plot.figure()
     title = "Receive Chirp (Targets at: " + str(ENVIRONMENT["Target 1"][0]) + \
@@ -154,17 +170,17 @@ def test_radarChannel():
     fig.suptitle(title, fontsize=20, weight=50)
 
     timePlot = plot.subplot(211)
-    timePlot.plot(time, abs(receiveSequence.real))
+    timePlot.plot(time, abs(channelSequence.real))
     timePlot.title.set_text('Time Domain')
     timePlot.grid()
 
     frequencyPlot = plot.subplot(223)
-    frequencyPlot.plot(frequency / 1e6, powerSpectrum(receiveSequence))
+    frequencyPlot.plot(frequency / 1e6, powerSpectrum(channelSequence))
     frequencyPlot.title.set_text('Frequency Domain: Amplitude')
     frequencyPlot.grid()
 
     anglePlot = plot.subplot(224)
-    anglePlot.plot(frequency / 1e6, phaseSpectrum(receiveSequence))
+    anglePlot.plot(frequency / 1e6, phaseSpectrum(channelSequence))
     anglePlot.title.set_text('Frequency Domain: Phase')
     anglePlot.grid()
 

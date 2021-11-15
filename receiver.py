@@ -2,9 +2,10 @@
 # This is made of the mixer and the signal processing to extract information
 
 from scipy.constants import c
+from math import pi, sin, radians
 import matplotlib.pyplot as plot
 from matplotlib import cm
-from numpy import multiply, linspace, copy, log, transpose
+from numpy import multiply, linspace, copy, zeros, transpose
 from numpy.fft import fft, fftshift
 from test_config import RADAR, ENVIRONMENT
 from common import powerSpectrum, addNoise
@@ -43,8 +44,11 @@ def test_signalMixer():
     # Creating the targets and the reflections
     receiveSequence = radarChannel(RADAR, ENVIRONMENT, transmitSequence)
 
+    # Processing just one channel for testing
+    channelSequence = transpose(receiveSequence[0, :])
+
     # Mixing the signals to get the beat signal
-    beatSignal = signalMixer(transmitSequence, receiveSequence)
+    beatSignal = signalMixer(transmitSequence, channelSequence)
 
     # Plotting the received signal to check for delay
     fig = plot.figure()
@@ -63,39 +67,47 @@ def test_signalMixer():
     transmitPlot.grid()
 
     receivePlot = plot.subplot(224)
-    receivePlot.plot(frequency / 1e6, powerSpectrum(receiveSequence))
+    receivePlot.plot(frequency / 1e6, powerSpectrum(channelSequence))
     receivePlot.title.set_text('Receive: Frequency Domain')
     receivePlot.grid()
 
     plot.show()
 
-def rangeDopplerProcessing(radar, mixerOutput):
-    # Reshape the output for FFT processing
-    radarCube = copy(mixerOutput).reshape(( \
-            radar["Number of Chirps"], radar["Time Samples in Chirp"]))
+def rangeDopplerProcessing(radar, transmitSequence, receivedSequence):
+    # Variable for output range doppler map
+    coherentCube = zeros((radar["Number of Chirps"], \
+        radar["Time Samples in Chirp"]), dtype=complex)
 
-    # Calculate the FFT for range
-    radarCube = fft(radarCube, axis=0)
-    radarCube = fft(radarCube, axis=1)
-    radarCube = fftshift(radarCube)
+    # Process the received signal per channel
+    for iChannel in range(radar["Array Size"]):
+        # Signal received at the current channel
+        channelSequence = receivedSequence[iChannel, :]
+
+        # Calculate the mixer output for the channel
+        beatSignal = signalMixer(transmitSequence, channelSequence)
+
+        # Reshape the output for FFT processing
+        radarCube = copy(beatSignal).reshape(( \
+                radar["Number of Chirps"], radar["Time Samples in Chirp"]))
+
+        # Calculate the FFT for range
+        radarCube = fft(radarCube, axis=0)
+        radarCube = fft(radarCube, axis=1)
+        radarCube = fftshift(radarCube)
+
+        # Sum the rangle doppler maps
+        coherentCube += abs(radarCube)
 
     # Return the processed cube
-    return radarCube
+    return coherentCube / radar["Array Size"]
 
 def test_rangeDopplerProcessing():
     # Generate the time axis for plotting the signal
     time = linspace(0, RADAR["Chirp Time"] * RADAR["Number of Chirps"], \
         RADAR["Time Samples in Chirp"] * RADAR["Number of Chirps"])
 
-    # Generating the frequency axis for plotting
-    frequency = linspace(- 0.5 / time[1], 0.5 / time[1], \
-        RADAR["Time Samples in Chirp"])
-
     # Creating the range axis to check for the target
     rMax = (RADAR["Chirp Time"] * c) / (4 * RADAR["Chirp Bandwidth"] * time[1])
-
-    range = linspace(0, rMax, int(RADAR["Time Samples in Chirp"] / 2))
-    velocity = linspace(1, 256, 256)
 
     # Generate a chirp signal
     chirpSignal = chirpGenerator(RADAR, False)
@@ -106,14 +118,8 @@ def test_rangeDopplerProcessing():
     # Creating the targets and the reflections
     receiveSequence = radarChannel(RADAR, ENVIRONMENT, transmitSequence)
 
-    # Adding noise
-    receiveSequence = addNoise(RADAR, receiveSequence)
-
-    # Mixing the signals to get the beat signal
-    beatSignal = signalMixer(transmitSequence, receiveSequence)
-
     # Calculate the Radar Cube
-    radarCube = rangeDopplerProcessing(RADAR, beatSignal)
+    rangeDopplerMap = rangeDopplerProcessing(RADAR, transmitSequence, receiveSequence)
 
     # Plotting the received signal to check for delay
     fig = plot.figure()
@@ -122,12 +128,16 @@ def test_rangeDopplerProcessing():
     fig.suptitle(title, fontsize=20, weight=50)
 
     # Neglecting the negative range data
-    visualData = transpose(abs(radarCube[:, 0:256]))
-    # visualData = 20*log(visualData + 1)
+    visualData = transpose(abs(rangeDopplerMap[:, 0:int(RADAR["Time Samples in Chirp"]/2)]))
 
     # Plotting the Range Doppler Map
     plot.imshow(visualData, extent=[-128, 128, 0, rMax])
     plot.show()
+
+def angleEstimation(radar, environment, rangeDopplerMap):
+    # Find the total number of targets based on ground truth
+    totalTargets = environment["Total Targets"]
+    # Find the index of strongest peaks in the Range Doppler Map
 
 if __name__ == '__main__':
     test_signalMixer()

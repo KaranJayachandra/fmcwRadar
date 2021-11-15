@@ -13,11 +13,13 @@ RADAR = {
     "Number of Chirps" : 256,
     "Operating Temperature" : 300,
     "Antenna Gain" : 1,
-    "Noise Figure": 100
+    "Noise Figure": 100,
+    "Array Size": 10,
+    "Array Spacing": 0.5
 }
 
 ENVIRONMENT = {
     "Total Targets": 2,
-    "Target 1" : [100, 10],
-    "Target 2" : [150, -20]
+    "Target 1" : [100, 10, 30],
+    "Target 2" : [150, -20, -45]
 }
