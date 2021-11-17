@@ -1,3 +1,11 @@
+# oooo    oooo                                          
+# `888   .8P'                                          Karan Jayachandra
+#  888  d8'     .oooo.   oooo d8b  .oooo.   ooo. .oo.  mail@karanjayachandra.com
+#  88888[      `P  )88b  `888""8P `P  )88b  `888P"Y88b karanjayachandra.com
+#  888`88b.     .oP"888   888      .oP"888   888   888 
+#  888  `88b.  d8(  888   888     d8(  888   888   888 
+# o888o  o888o `Y888""8o d888b    `Y888""8o o888o o888o 
+
 # FMCW Receiver Module
 # This is made of the mixer and the signal processing to extract information
 
@@ -5,10 +13,10 @@ from scipy.constants import c
 from math import pi, sin, radians
 import matplotlib.pyplot as plot
 from matplotlib import cm
-from numpy import multiply, linspace, copy, zeros, transpose
+from numpy import multiply, linspace, copy, zeros, transpose, mean, log
 from numpy.fft import fft, fftshift
 from test_config import RADAR, ENVIRONMENT
-from common import powerSpectrum, addNoise
+from common import powerSpectrum, findTargets, estimateAngle
 from transmitter import chirpGenerator, sequenceGenerator
 from environment import radarChannel
 
@@ -75,7 +83,7 @@ def test_signalMixer():
 
 def rangeDopplerProcessing(radar, transmitSequence, receivedSequence):
     # Variable for output range doppler map
-    coherentCube = zeros((radar["Number of Chirps"], \
+    coherentCube = zeros((radar["Array Size"], radar["Number of Chirps"], \
         radar["Time Samples in Chirp"]), dtype=complex)
 
     # Process the received signal per channel
@@ -96,10 +104,10 @@ def rangeDopplerProcessing(radar, transmitSequence, receivedSequence):
         radarCube = fftshift(radarCube)
 
         # Sum the rangle doppler maps
-        coherentCube += abs(radarCube)
+        coherentCube[iChannel, :, :] = radarCube
 
     # Return the processed cube
-    return coherentCube / radar["Array Size"]
+    return coherentCube
 
 def test_rangeDopplerProcessing():
     # Generate the time axis for plotting the signal
@@ -119,7 +127,10 @@ def test_rangeDopplerProcessing():
     receiveSequence = radarChannel(RADAR, ENVIRONMENT, transmitSequence)
 
     # Calculate the Radar Cube
-    rangeDopplerMap = rangeDopplerProcessing(RADAR, transmitSequence, receiveSequence)
+    radarCube = rangeDopplerProcessing(RADAR, transmitSequence, receiveSequence)
+
+    # Calculate the average across the receivers incoherently
+    rangeDopplerMap = mean(abs(radarCube), axis=0)
 
     # Plotting the received signal to check for delay
     fig = plot.figure()
@@ -128,17 +139,55 @@ def test_rangeDopplerProcessing():
     fig.suptitle(title, fontsize=20, weight=50)
 
     # Neglecting the negative range data
-    visualData = transpose(abs(rangeDopplerMap[:, 0:int(RADAR["Time Samples in Chirp"]/2)]))
+    visualData = 20 * log(transpose(abs(rangeDopplerMap[:, \
+        0:int(RADAR["Time Samples in Chirp"]/2)])))
 
     # Plotting the Range Doppler Map
     plot.imshow(visualData, extent=[-128, 128, 0, rMax])
     plot.show()
 
-def angleEstimation(radar, environment, rangeDopplerMap):
-    # Find the total number of targets based on ground truth
-    totalTargets = environment["Total Targets"]
-    # Find the index of strongest peaks in the Range Doppler Map
+def angleEstimation(radar, radarCube):
+    angleData = zeros((radar["Number of Chirps"], radar["Time Samples in Chirp"]))
+    
+    for iDoppler in range(radar["Number of Chirps"]):
+        for iRange in range(radar["Time Samples in Chirp"]):
+            snapShot = radarCube[:, iDoppler, iRange]
+            angleData[iDoppler, iRange] = estimateAngle(snapShot)
+    return angleData
+
+def test_angleEstimation():
+    # Generate the time axis for plotting the signal
+    time = linspace(0, RADAR["Chirp Time"] * RADAR["Number of Chirps"], \
+        RADAR["Time Samples in Chirp"] * RADAR["Number of Chirps"])
+
+    # Creating the range axis to check for the target
+    rMax = (RADAR["Chirp Time"] * c) / (4 * RADAR["Chirp Bandwidth"] * time[1])
+
+    # Generate a chirp signal
+    chirpSignal = chirpGenerator(RADAR, False)
+
+    # Generate Chirp Sequence
+    transmitSequence = sequenceGenerator(RADAR, chirpSignal, False)
+
+    # Creating the targets and the reflections
+    receiveSequence = radarChannel(RADAR, ENVIRONMENT, transmitSequence)
+
+    # Calculate the Radar Cube
+    radarCube = rangeDopplerProcessing(RADAR, transmitSequence, receiveSequence)
+
+    # Calculate the average across the receivers incoherently
+    rangeDopplerMap = mean(abs(radarCube), axis=0)
+
+    # Find the range doppler bins of the target
+    targetIndices = findTargets(rangeDopplerMap, ENVIRONMENT["Total Targets"])
+
+    # Extract the angle information based on array 
+    targetAngles = angleEstimation(radarCube, targetIndices)
+
+    # Print target details
+    print(targetAngles)
 
 if __name__ == '__main__':
-    test_signalMixer()
-    test_rangeDopplerProcessing()
+    # test_signalMixer()
+    # test_rangeDopplerProcessing()
+    test_angleEstimation()

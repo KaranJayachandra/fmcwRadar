@@ -1,3 +1,11 @@
+# oooo    oooo                                          
+# `888   .8P'                                          Karan Jayachandra
+#  888  d8'     .oooo.   oooo d8b  .oooo.   ooo. .oo.  mail@karanjayachandra.com
+#  88888[      `P  )88b  `888""8P `P  )88b  `888P"Y88b karanjayachandra.com
+#  888`88b.     .oP"888   888      .oP"888   888   888 
+#  888  `88b.  d8(  888   888     d8(  888   888   888 
+# o888o  o888o `Y888""8o d888b    `Y888""8o o888o o888o 
+
 # FMCW Environment Module
 # It is made of one class: RadarTarget() and one function: radarChannel()
 # They come with their own test/debug functions that help you visualize the
@@ -6,9 +14,8 @@
 from math import pi, sin, radians
 from scipy.constants import c
 import matplotlib.pyplot as plot
-from numpy import linspace, copy, pad, zeros, abs, angle, exp, multiply
-from numpy.fft import fft, fftshift
-from common import phaseSpectrum, powerSpectrum
+from numpy import linspace, copy, pad, zeros, abs, exp, multiply
+from common import phaseSpectrum, powerSpectrum, addNoise
 from test_config import RADAR, ENVIRONMENT
 from transmitter import chirpGenerator, sequenceGenerator
 
@@ -30,8 +37,10 @@ class RadarTarget():
         self.velocity = velocity
         # Calculate the delay based on the target distance
         self.delay = (self.range * 2) / c
+        # Adding a constant so that the distant targets are still seen
+        powerConstant = 10
         # Calculate the attentuation due to propagation
-        self.attenuation = 1 / self.range ** 4
+        self.attenuation = powerConstant / (self.range ** 4)
     # The reflection currently only contains range information
     def reflect(self, radar, chirpSequence):
         """
@@ -58,9 +67,13 @@ class RadarTarget():
             phase = exp(1j * phase)
             # Multiply with the phase and return
             chirpBlock[iSlow, :] = multiply(phase, delayChirp)
+        
+        # Add noise to the returned signal
+        chirpBlock = addNoise(radar, chirpBlock)
+
         # Return the sequence back to the receiver
-        # return self.attenuation * chirpBlock.flatten()
-        return chirpBlock.flatten()
+        return self.attenuation * chirpBlock.flatten()
+        # return chirpBlock.flatten()
 
 def test_radarTarget():
     # Generate the time axis for plotting the signal
