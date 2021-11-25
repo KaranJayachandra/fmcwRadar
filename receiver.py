@@ -139,7 +139,7 @@ def test_rangeDopplerProcessing():
     fig.suptitle(title, fontsize=20, weight=50)
 
     # Neglecting the negative range data
-    visualData = 20 * log(transpose(abs(rangeDopplerMap[:, \
+    visualData = (transpose(abs(rangeDopplerMap[:, \
         0:int(RADAR["Time Samples in Chirp"]/2)])))
 
     # Plotting the Range Doppler Map
@@ -189,5 +189,5 @@ def test_angleEstimation():
 
 if __name__ == '__main__':
     # test_signalMixer()
-    # test_rangeDopplerProcessing()
-    test_angleEstimation()
+    test_rangeDopplerProcessing()
+    # test_angleEstimation()
